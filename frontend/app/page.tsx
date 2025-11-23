@@ -39,12 +39,12 @@ export default function Home() {
   };
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center gap-8 p-8 bg-[var(--background)] text-[var(--text-main)] transition-colors">
+    <main className="relative min-h-screen p-8 bg-[var(--background)] text-[var(--text-main)] transition-colors">
       {/* 🌞 / 🌙 THEME TOGGLE BUTTON — place this ABOVE your content */}
       {mounted && (
         <button
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          className="absolute top-4 right-4 p-2 rounded-full bg-[var(--card)] shadow hover:shadow-md transition"
+          className="absolute top-4 right-4 p-2 rounded-full bg-[var(--card)] shadow hover:shadow-md transition z-10"
           aria-label="Toggle theme"
         >
           {theme === "light" ? "🌙" : "☀️"}
@@ -52,39 +52,45 @@ export default function Home() {
       )}
 
       {/* MAIN HEADER */}
-      <h1 className="text-3xl font-bold">ResumeCritic</h1>
+      <h1 className="text-3xl font-bold text-center mb-8">ResumeCritic</h1>
 
-      {/* UPLOAD FORM */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col items-center gap-4 bg-[var(--card)] p-6 rounded-2xl shadow-md w-full max-w-md"
-      >
-        <input
-          type="file"
-          accept=".pdf,.txt,.doc,.docx"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="border border-gray-300 text-[var(--text-main)] p-2 w-full rounded-md"
-        />
+      {/* MAIN CONTENT - SIDE BY SIDE LAYOUT */}
+      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center max-w-7xl mx-auto">
+        {/* LEFT SIDE - UPLOAD FORM */}
+        <div className="w-full lg:w-1/2 lg:max-w-md">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-4 bg-[var(--card)] p-6 rounded-2xl shadow-md sticky top-8"
+          >
+            <h2 className="text-xl font-semibold mb-2">Upload & Analyze</h2>
+            <input
+              type="file"
+              accept=".pdf,.txt,.doc,.docx"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="border border-gray-300 text-[var(--text-main)] p-2 w-full rounded-md"
+            />
 
-        <textarea
-          value={jobText}
-          onChange={(e) => setJobText(e.target.value)}
-          placeholder="Paste job description here..."
-          className="border border-gray-300 text-[var(--text-main)] p-2 w-full h-32 rounded-md"
-        />
+            <textarea
+              value={jobText}
+              onChange={(e) => setJobText(e.target.value)}
+              placeholder="Paste job description here..."
+              className="border border-gray-300 text-[var(--text-main)] p-2 w-full h-96 rounded-md resize-y"
+            />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-4 py-2 rounded-md font-semibold disabled:opacity-50"
-        >
-          {loading ? "Analyzing..." : "Analyze"}
-        </button>
-      </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-4 py-2 rounded-md font-semibold disabled:opacity-50"
+            >
+              {loading ? "Analyzing..." : "Analyze"}
+            </button>
+          </form>
+        </div>
 
-      {/* RESULTS */}
-      {result && (
-        <div className="mt-8 bg-[var(--card)] p-6 rounded-2xl shadow-md w-full max-w-lg">
+        {/* RIGHT SIDE - RESULTS */}
+        <div className="w-full lg:w-1/2 lg:max-w-2xl">
+          {result ? (
+            <div className="bg-[var(--card)] p-6 rounded-2xl shadow-md">
           <h2 className="text-xl font-bold mb-4">Analysis Results</h2>
 
           <div className="mb-4">
@@ -121,8 +127,73 @@ export default function Home() {
               </p>
             )}
           </div>
+          {result.matched_keywords && result.matched_keywords.length > 0 && (
+            <div className="mb-4">
+              <p className="text-[var(--text-muted)] mb-2 font-medium">
+                Matched Keywords
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {result.matched_keywords.map((kw: string, i: number) => (
+                  <span
+                    key={i}
+                    className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mb-4">
+            <p className="text-[var(--text-muted)] mb-2 font-medium">
+              Resume Keywords
+            </p>
+            {result.resume_keywords?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {result.resume_keywords.map((kw: string, i: number) => (
+                  <span
+                    key={i}
+                    className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--text-muted)]">
+                No resume keywords detected.
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-[var(--text-muted)] mb-2 font-medium">
+              Job Posting Keywords
+            </p>
+            {result.job_keywords?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {result.job_keywords.map((kw: string, i: number) => (
+                  <span
+                    key={i}
+                    className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--text-muted)]">
+                No job keywords detected.
+              </p>
+            )}
+          </div>
+            </div>
+          ) : (
+            <div className="bg-[var(--card)] p-6 rounded-2xl shadow-md text-center text-[var(--text-muted)]">
+              <p>Upload a resume and job description to see analysis results here.</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </main>
   );
 }
