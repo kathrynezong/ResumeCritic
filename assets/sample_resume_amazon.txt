@@ -1,0 +1,94 @@
+MICHAEL RODRIGUEZ
+Hardware Development Engineer
+Email: michael.rodriguez@university.edu | Phone: (555) 987-6543
+LinkedIn: linkedin.com/in/michaelrodriguez | GitHub: github.com/mrodriguez-hw
+
+EDUCATION
+
+Bachelor of Science in Electrical Engineering
+University of California, Berkeley | Expected Graduation: May 2027
+GPA: 3.8/4.0 | Dean's List (All Semesters)
+Relevant Coursework: Digital Circuit Design, Analog Electronics, Embedded Systems, 
+Microcontroller Programming, Signal Processing, VLSI Design
+
+TECHNICAL SKILLS
+
+Hardware Design: Schematic design, PCB layout, circuit simulation, hardware validation
+Design Tools: Altium Designer, OrCAD, LTSpice, Cadence, KiCAD
+Programming: C, C++, Python, VHDL, Verilog, Assembly
+Embedded Systems: Arduino, Raspberry Pi, ARM Cortex, STM32, ESP32, FPGA
+Test & Debug: Oscilloscope, Logic Analyzer, Multimeter, Signal Generator
+Automation Tools: LabVIEW, HPVEE, MATLAB, Python scripting
+Protocols: I2C, SPI, UART, USB, CAN, Ethernet
+Analog Skills: Op-amp circuits, power supply design, signal conditioning
+Digital Skills: Logic design, timing analysis, state machines, FPGA programming
+
+RELEVANT EXPERIENCE
+
+Hardware Engineering Intern | Tesla, Inc. | Summer 2025
+• Designed and validated analog and digital circuits for automotive control systems
+• Performed schematic design and PCB layout for embedded controller boards
+• Debugged hardware issues using oscilloscopes and logic analyzers
+• Developed automated test scripts in LabVIEW for production validation
+• Collaborated with cross-functional teams on product definition and execution
+• Supported engineering builds and gained experience with high-volume manufacturing
+
+Undergraduate Research Assistant | UC Berkeley Robotics Lab | Jan 2024 - Present
+• Design embedded systems for autonomous robot navigation
+• Develop custom PCBs for sensor integration and motor control
+• Debug hardware and firmware issues in real-time systems
+• Create automated test tools using Python and LabVIEW
+• Work with analog sensors, digital communication protocols, and power electronics
+
+PROJECTS
+
+Smart Home IoT Controller | Senior Design Project | Sept 2025 - Present
+• Leading team of 4 students to design complete IoT device from concept to prototype
+• Performed schematic design for ESP32-based controller with multiple sensors
+• Implemented I2C, SPI, and UART communication protocols
+• Validated hardware through systematic debug and testing procedures
+• Gained exposure to complete product lifecycle from design to manufacturing
+
+Automated Test Bench for Power Supplies | Personal Project | Summer 2024
+• Developed automated testing system using LabVIEW and Arduino
+• Designed custom interface circuits for voltage and current measurement
+• Created data logging and analysis tools in Python
+• Reduced manual testing time by 70% through automation
+
+Wireless Sensor Network | Course Project | Spring 2024
+• Designed low-power embedded system with wireless communication
+• Implemented analog signal conditioning circuits for temperature and humidity sensors
+• Debugged timing issues and optimized power consumption
+• Presented technical design review to faculty and industry professionals
+
+LEADERSHIP & ACTIVITIES
+
+Vice President | IEEE Student Branch, UC Berkeley | 2024 - Present
+• Organize technical workshops on PCB design and embedded systems
+• Lead team of 15 students in hardware competition projects
+
+Hardware Team Lead | Berkeley Robotics Club | 2023 - Present
+• Mentor junior students in circuit design and debugging techniques
+• Coordinate hardware development for competition robots
+
+CERTIFICATIONS & TRAINING
+
+• Certified LabVIEW Associate Developer (CLAD)
+• Altium Designer PCB Design Certification
+• IPC-A-610 Acceptability of Electronic Assemblies Training
+
+AWARDS & ACHIEVEMENTS
+
+• 1st Place - UC Berkeley Hardware Design Competition 2025
+• Best Technical Presentation - IEEE Region 6 Student Conference 2024
+• Dean's List - All Semesters (2023-2025)
+
+ADDITIONAL INFORMATION
+
+• Available for 12-week internship commitment, 40 hours/week
+• Flexible with start dates: Winter, Summer, or Fall 2026
+• Open to relocation anywhere in the United States
+• Strong analytical and problem-solving skills
+• Excellent team collaboration and communication abilities
+• Experience working in fast-paced, cross-functional environments
+• U.S. Citizen, 21 years old
