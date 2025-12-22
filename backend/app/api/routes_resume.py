@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, Form, HTTPException
 import re
-import PyPDF2
 import pdfplumber
 from io import BytesIO
 from sentence_transformers import SentenceTransformer
@@ -33,6 +32,7 @@ except Exception as e:
     GPT_ENABLED = False
 
 # Known programming languages and technologies
+# Combined list of all technical terms (single words and multi-word phrases)
 TECHNICAL_TERMS = {
     # Programming languages
     "python", "java", "javascript", "typescript", "c++", "c#", "cpp", "c",
@@ -55,19 +55,31 @@ TECHNICAL_TERMS = {
     "rtos", "hal", "ecu", "can", "lin", "spi", "i2c", "uart", "usb",
     "embedded", "microcontroller", "fpga", "arm", "cortex", "x86",
     "firmware", "bootloader", "device driver",
+    "embedded linux", "embedded software", "real-time operating system",
+    "hardware abstraction layer", "kernel space", "user space",
     
     # Automotive and protocols
     "autosar", "misra", "iso26262", "aspice", "functional safety",
-    "adas", "v2x", "obd", "diagnostics",
+    "adas", "v2x", "obd", "diagnostics", "automotive communication",
     
     # Development practices
     "agile", "scrum", "kanban", "devops", "cicd", "tdd", "bdd",
     "unit testing", "integration testing", "test automation",
-    "code review", "version control", "continuous integration",
+    "code review", "version control", "continuous integration", "continuous deployment",
+    "test driven development", "behavior driven development", "agile methodology",
+    "version control system", "source code management", "build automation",
+    "configuration management", "release management", "technical documentation",
     
     # Cloud and architecture
     "microservices", "api", "rest", "graphql", "grpc", "soap",
     "serverless", "lambda", "containerization", "orchestration",
+    "software architecture", "design patterns", "object oriented",
+    "software development", "full stack", "back end", "front end",
+    "system design", "distributed system", "cloud computing", "edge computing",
+    
+    # Acronyms and abbreviations
+    "sdk", "ide", "orm", "mvc", "crud", "iot", "pcb",
+    "tcp", "udp", "http", "https", "ssh",
     
     # Data and ML
     "machine learning", "deep learning", "neural network", "nlp",
@@ -77,52 +89,11 @@ TECHNICAL_TERMS = {
     # Security
     "encryption", "authentication", "authorization", "oauth", "jwt",
     "penetration testing", "vulnerability assessment", "cybersecurity",
-}
-
-# Multi-word technical terms and patterns
-TECHNICAL_PHRASES = {
-    "embedded linux", "embedded software", "real-time operating system",
-    "hardware abstraction layer", "device driver", "kernel space", "user space",
-    "automotive communication", "functional safety", "software architecture",
-    "design patterns", "object oriented", "continuous integration", "continuous deployment",
-    "test driven development", "behavior driven development", "agile methodology",
-    "version control system", "source code management", "build automation",
-    "configuration management", "release management", "technical documentation",
-    "software development", "full stack", "back end", "front end",
+    
+    # Education and concepts
     "data structure", "algorithm", "computer science", "electrical engineering",
-    "computer engineering", "software engineering", "system design",
+    "computer engineering", "software engineering",
     "performance optimization", "memory management", "multithreading", "concurrency",
-    "distributed system", "cloud computing", "edge computing",
-}
-
-# Words to completely ignore
-IGNORE_WORDS = {
-    # Generic business/job terms
-    "job", "position", "role", "opportunity", "career", "company", "team",
-    "candidate", "employee", "work", "experience", "year", "responsibility",
-    "skill", "ability", "requirement", "qualification", "education", "degree",
-    "communication", "collaboration", "customer", "client", "business",
-    "management", "leadership", "project", "problem", "solution", "quality",
-    
-    # Generic descriptive words
-    "good", "great", "excellent", "strong", "effective", "efficient", "successful",
-    "innovative", "creative", "dynamic", "passionate", "motivated", "detail",
-    
-    # Common verbs/actions
-    "develop", "create", "build", "design", "implement", "maintain", "improve",
-    "work", "collaborate", "communicate", "manage", "lead", "support", "provide",
-    "ensure", "help", "make", "take", "give", "use", "need", "want",
-    
-    # Time/location
-    "time", "day", "week", "month", "year", "location", "office", "remote",
-    "canada", "usa", "united states",
-    
-    # Compensation
-    "salary", "pay", "compensation", "benefit", "bonus", "stock",
-    
-    # Other filler
-    "etc", "including", "such", "other", "various", "multiple", "related",
-    "completion", "term", "application", "performance", "next", "chapter",
 }
 
 def extract_keywords(text: str):
@@ -135,22 +106,18 @@ def extract_keywords(text: str):
     keywords = set()
     text_lower = text.lower()
     
-    # Extract exact technical terms
+    # Extract technical terms (handles both single words and multi-word phrases)
     for term in TECHNICAL_TERMS:
         if ' ' in term or '-' in term:
+            # Multi-word terms: allow spaces or hyphens
             pattern = re.escape(term).replace(r'\ ', r'[\s\-]+')
             if re.search(pattern, text_lower):
                 keywords.add(term)
         else:
+            # Single-word terms: use word boundaries
             pattern = r'\b' + re.escape(term) + r'\b'
             if re.search(pattern, text_lower):
                 keywords.add(term)
-    
-    # Extract multi-word technical phrases
-    for phrase in TECHNICAL_PHRASES:
-        pattern = re.escape(phrase).replace(r'\ ', r'[\s\-]+')
-        if re.search(pattern, text_lower):
-            keywords.add(phrase)
     
     # Extract special patterns
     special_patterns = {
@@ -163,16 +130,13 @@ def extract_keywords(text: str):
         if re.search(pattern, text_lower):
             keywords.add(term)
     
-    # Extract acronyms
+    # Extract acronyms (2-5 uppercase letters)
+    # Only match uppercase to avoid false positives like "can" (verb)
     acronyms = re.findall(r'\b[A-Z]{2,5}\b', text)
-    known_acronyms = {'api', 'sdk', 'ide', 'orm', 'mvc', 'crud', 'cicd', 
-                      'aws', 'gcp', 'sql', 'rest', 'grpc', 'iot', 'pcb', 
-                      'fpga', 'rtos', 'hal', 'can', 'uart', 'spi', 'i2c',
-                      'tcp', 'udp', 'http', 'ssh', 'jwt', 'oauth', 'tdd'}
-    
     for acro in acronyms:
         acro_lower = acro.lower()
-        if acro_lower in known_acronyms or acro_lower in TECHNICAL_TERMS:
+        # Check if the acronym is in our technical terms list
+        if acro_lower in TECHNICAL_TERMS:
             keywords.add(acro_lower)
     
     return keywords
@@ -359,12 +323,10 @@ def match_with_or_groups(resume_keywords: set, job_keywords: set, or_groups: lis
 
 def extract_text_from_pdf(file_content: bytes) -> str:
     """
-    Extract text from PDF file content.
-    Tries pdfplumber first (better for complex PDFs), falls back to PyPDF2.
+    Extract text from PDF file content using pdfplumber.
     """
     text = ""
     
-    # Try pdfplumber first (better text extraction)
     try:
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
@@ -372,19 +334,16 @@ def extract_text_from_pdf(file_content: bytes) -> str:
                 if page_text:
                     text += page_text + "\n"
     except Exception as e:
-        print(f"pdfplumber failed: {e}, trying PyPDF2...")
-        # Fallback to PyPDF2
-        try:
-            pdf_file = BytesIO(file_content)
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-            for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
-        except Exception as e2:
-            print(f"PyPDF2 also failed: {e2}")
-            raise HTTPException(
-                status_code=400,
-                detail=f"Could not extract text from PDF: {str(e2)}"
-            )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not extract text from PDF: {str(e)}"
+        )
+    
+    if not text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="PDF appears to be empty or contains no extractable text"
+        )
     
     return text
 
@@ -398,13 +357,7 @@ async def analyze_resume(resume: UploadFile, job_text: str = Form(...)):
     elif file_extension in ['txt', 'text']:
         resume_text = file_content.decode("utf-8", errors="ignore")
     else:
-        # try:
-        #     resume_text = file_content.decode("utf-8", errors="ignore")
-        # except:
-        #     try:
-        #         resume_text = extract_text_from_pdf(file_content)
-        #     except:
-                raise HTTPException(status_code=400, detail="Could not extract text from file")
+        raise HTTPException(status_code=400, detail="Could not extract text from file")
 
     # Keyword-based matching
     resume_kw = extract_keywords(resume_text)
