@@ -8,6 +8,10 @@ node_modules/
 .next/
 dist/
 
+# Environment variables
+.env
+.env.local
+
 # OS
 .DS_Store
 Thumbs.db

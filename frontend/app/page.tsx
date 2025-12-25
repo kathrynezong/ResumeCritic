@@ -136,7 +136,7 @@ export default function Home() {
               )}
               {result.gpt_analysis?.enabled && (
                 <div>
-                  <p className="text-xs text-[var(--text-muted)] mb-1">GPT-4o</p>
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Gemini AI</p>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-purple-500 h-2 rounded-full transition-all duration-500"
@@ -149,43 +149,74 @@ export default function Home() {
             </div>
           )}
 
-          {/* GPT Analysis Details */}
+          {/* Gemini AI Analysis Summary */}
           {result.gpt_analysis?.enabled && (
-            <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <h3 className="font-semibold mb-2 text-sm">GPT-4o Analysis</h3>
-              <p className="text-xs text-[var(--text-muted)] mb-3">{result.gpt_analysis.summary}</p>
+            <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
+              <h3 className="font-semibold mb-3 text-base flex items-center gap-2">
+                <span>🤖</span>
+                <span>Gemini AI Analysis</span>
+              </h3>
               
+              {/* AI Summary - Prominently Displayed */}
+              {result.gpt_analysis.summary && (
+                <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-md border border-purple-200 dark:border-purple-800">
+                  <p className="text-sm font-medium mb-1 text-[var(--text-main)]">AI Summary:</p>
+                  <p className="text-sm text-[var(--text-main)] leading-relaxed">{result.gpt_analysis.summary}</p>
+                </div>
+              )}
+              
+              {/* Recommendation Badge */}
+              {result.gpt_analysis.recommendation && (
+                <div className="mb-3">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200">
+                    Recommendation: {result.gpt_analysis.recommendation?.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              )}
+              
+              {/* Detailed Scores */}
               <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                <div>Technical Skills: {result.gpt_analysis.technical_skills}%</div>
-                <div>Experience: {result.gpt_analysis.experience_level}%</div>
-                <div>Education: {result.gpt_analysis.education}%</div>
-                <div>Domain: {result.gpt_analysis.domain_knowledge}%</div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--text-muted)]">Technical Skills:</span>
+                  <span className="font-semibold">{result.gpt_analysis.technical_skills}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--text-muted)]">Experience:</span>
+                  <span className="font-semibold">{result.gpt_analysis.experience_level}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--text-muted)]">Education:</span>
+                  <span className="font-semibold">{result.gpt_analysis.education}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--text-muted)]">Domain Knowledge:</span>
+                  <span className="font-semibold">{result.gpt_analysis.domain_knowledge}%</span>
+                </div>
               </div>
               
-              {result.gpt_analysis.strengths?.length > 0 && (
-                <div className="mb-2">
-                  <p className="text-xs font-medium mb-1">Strengths:</p>
-                  <ul className="text-xs list-disc list-inside text-[var(--text-muted)]">
-                    {result.gpt_analysis.strengths.map((s: string, i: number) => (
-                      <li key={i}>{s}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {result.gpt_analysis.gaps?.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium mb-1">Gaps:</p>
-                  <ul className="text-xs list-disc list-inside text-[var(--text-muted)]">
-                    {result.gpt_analysis.gaps.map((g: string, i: number) => (
-                      <li key={i}>{g}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              <div className="mt-2 text-xs font-semibold">
-                Recommendation: {result.gpt_analysis.recommendation?.replace('_', ' ')}
+              {/* Strengths and Gaps */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {result.gpt_analysis.strengths?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold mb-1 text-green-700 dark:text-green-400">✅ Strengths:</p>
+                    <ul className="text-xs list-disc list-inside text-[var(--text-muted)] space-y-1">
+                      {result.gpt_analysis.strengths.map((s: string, i: number) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {result.gpt_analysis.gaps?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold mb-1 text-red-700 dark:text-red-400">⚠️ Areas to Improve:</p>
+                    <ul className="text-xs list-disc list-inside text-[var(--text-muted)] space-y-1">
+                      {result.gpt_analysis.gaps.map((g: string, i: number) => (
+                        <li key={i}>{g}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           )}

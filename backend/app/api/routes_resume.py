@@ -5,7 +5,7 @@ from io import BytesIO
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
-from openai import AzureOpenAI
+import google.genai as genai
 import os
 from dotenv import load_dotenv
 import json
@@ -17,19 +17,22 @@ router = APIRouter()
 # Load semantic similarity model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Initialize Azure OpenAI client
+# Initialize Google Gemini client
 try:
-    azure_client = AzureOpenAI(
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
-    )
-    AZURE_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o")
-    GPT_ENABLED = True
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key:
+        client = genai.Client(api_key=api_key)
+        gemini_model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        LLM_ENABLED = True
+    else:
+        client = None
+        gemini_model_name = None
+        LLM_ENABLED = False
 except Exception as e:
-    print(f"Azure OpenAI not configured: {e}")
-    azure_client = None
-    GPT_ENABLED = False
+    print(f"Gemini not configured: {e}")
+    client = None
+    gemini_model_name = None
+    LLM_ENABLED = False
 
 # Known programming languages and technologies
 # Combined list of all technical terms (single words and multi-word phrases)
@@ -155,11 +158,11 @@ def compute_semantic_similarity(text1: str, text2: str) -> float:
 
 def analyze_with_gpt(resume_text: str, job_text: str) -> dict:
     """
-    Use GPT-4o to analyze resume-job fit with consistent criteria
+    Use Google Gemini to analyze resume-job fit with consistent criteria
     Returns structured analysis with score and feedback
     """
-    if not GPT_ENABLED or not azure_client:
-        return {"enabled": False, "error": "GPT analysis not configured"}
+    if not LLM_ENABLED or not client or not gemini_model_name:
+        return {"enabled": False, "error": "Gemini analysis not configured"}
     
     prompt = f"""You are an expert HR recruiter. Analyze how well this resume matches the job requirements.
 
@@ -176,7 +179,7 @@ Evaluate the candidate on these criteria (score each 0-100):
 4. Domain Knowledge: Industry-specific knowledge
 5. Overall Fit: Cultural fit and soft skills
 
-Provide your response in this exact JSON format:
+Provide your response in this exact JSON format (keep all text concise - max 50 chars per strength/gap, 150 chars for summary):
 {{
   "technical_skills": <score 0-100>,
   "experience_level": <score 0-100>,
@@ -187,36 +190,153 @@ Provide your response in this exact JSON format:
   "strengths": ["strength1", "strength2", "strength3"],
   "gaps": ["gap1", "gap2", "gap3"],
   "recommendation": "<STRONG_MATCH|GOOD_MATCH|PARTIAL_MATCH|WEAK_MATCH>",
-  "summary": "<2-3 sentence summary>"
+  "summary": "<2-3 sentence summary, max 150 characters>"
 }}
 
-Be objective and specific. Only return valid JSON."""
+IMPORTANT: Return ONLY valid JSON. No markdown, no code blocks, no explanations. Start with {{ and end with }}. Keep all strings short."""
     
     try:
-        response = azure_client.chat.completions.create(
-            model=AZURE_DEPLOYMENT,
-            messages=[
-                {"role": "system", "content": "You are an expert HR recruiter who provides objective, structured candidate evaluations."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=1000
+        response = client.models.generate_content(
+            model=gemini_model_name,
+            contents=prompt,
+            config={
+                "temperature": 0.3,
+                "max_output_tokens": 2000,  # Increased to handle longer responses
+            }
         )
         
-        content = response.choices[0].message.content.strip()
+        # Get the full response text - handle different response formats
+        if hasattr(response, 'text'):
+            content = response.text.strip()
+        elif hasattr(response, 'candidates') and len(response.candidates) > 0:
+            # Alternative response format
+            content = response.candidates[0].content.parts[0].text.strip()
+        elif hasattr(response, 'content'):
+            content = response.content.strip()
+        else:
+            # Try to convert to string
+            content = str(response).strip()
         
-        # Extract JSON from response
+        # Debug: Check if response seems truncated
+        if len(content) < 100:
+            print(f"Warning: Response seems very short ({len(content)} chars)")
+        
+        # Extract JSON from response - handle various formats
         if "```json" in content:
-            content = content.split("```json")[1].split("```")[0].strip()
+            # Extract content between ```json and ```
+            parts = content.split("```json")
+            if len(parts) > 1:
+                content = parts[1].split("```")[0].strip()
         elif "```" in content:
-            content = content.split("```")[1].split("```")[0].strip()
+            # Extract content between ``` and ```
+            parts = content.split("```")
+            if len(parts) > 1:
+                content = parts[1].split("```")[0].strip()
         
+        # Try to find JSON object boundaries if not already extracted
+        if not content.startswith("{"):
+            start_idx = content.find("{")
+            if start_idx != -1:
+                content = content[start_idx:]
+        
+        # Find the matching closing brace - handle nested objects and strings properly
+        brace_count = 0
+        in_string = False
+        escape_next = False
+        end_idx = -1
+        
+        for i, char in enumerate(content):
+            if escape_next:
+                escape_next = False
+                continue
+            
+            if char == "\\":
+                escape_next = True
+                continue
+            
+            if char == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            
+            if not in_string:
+                if char == "{":
+                    brace_count += 1
+                elif char == "}":
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end_idx = i + 1
+                        break
+        
+        if end_idx != -1:
+            content = content[:end_idx]
+        else:
+            # If we couldn't find the end, the JSON might be incomplete
+            # Try to close it manually by adding missing closing braces/brackets
+            open_braces = content.count('{') - content.count('}')
+            open_brackets = content.count('[') - content.count(']')
+            
+            # If we're in the middle of a string, try to close it
+            if in_string:
+                content += '"'
+                in_string = False
+            
+            # Close any open arrays
+            for _ in range(open_brackets):
+                content += ']'
+            
+            # Close any open objects
+            for _ in range(open_braces):
+                content += '}'
+        
+        # Clean up any trailing commas or whitespace before parsing
+        content = content.rstrip().rstrip(',')
+        
+        # Parse JSON
         result = json.loads(content)
         result["enabled"] = True
         return result
         
+    except json.JSONDecodeError as e:
+        print(f"Gemini JSON parsing error: {e}")
+        print(f"Response content (first 2000 chars): {content[:2000]}")
+        print(f"Response length: {len(content)}")
+        print(f"Last 200 chars: {content[-200:]}")
+        
+        # Try to fix common JSON issues
+        try:
+            import re
+            # Remove trailing commas
+            fixed_content = re.sub(r',\s*}', '}', content)
+            fixed_content = re.sub(r',\s*]', ']', fixed_content)
+            
+            # If response seems truncated, try to close it
+            open_braces = fixed_content.count('{') - fixed_content.count('}')
+            open_brackets = fixed_content.count('[') - fixed_content.count(']')
+            
+            # Close incomplete strings at the end
+            if fixed_content.rstrip().endswith('"') == False and '"' in fixed_content:
+                # Find last unclosed quote
+                last_quote = fixed_content.rfind('"')
+                if last_quote > len(fixed_content) - 50:  # Near the end
+                    # Check if it's an open string
+                    before_quote = fixed_content[:last_quote]
+                    if before_quote.count('"') % 2 == 1:  # Odd number means unclosed
+                        fixed_content = fixed_content[:last_quote] + '"' + fixed_content[last_quote+1:]
+            
+            # Close arrays and objects
+            for _ in range(open_brackets):
+                fixed_content += ']'
+            for _ in range(open_braces):
+                fixed_content += '}'
+            
+            result = json.loads(fixed_content)
+            result["enabled"] = True
+            return result
+        except Exception as fix_error:
+            print(f"Failed to fix JSON: {fix_error}")
+            return {"enabled": False, "error": f"Failed to parse AI response (truncated?): {str(e)}"}
     except Exception as e:
-        print(f"GPT analysis error: {e}")
+        print(f"Gemini analysis error: {e}")
         return {"enabled": False, "error": str(e)}
 
 def extract_or_groups(text: str, all_keywords: set) -> list:
@@ -378,7 +498,7 @@ async def analyze_resume(resume: UploadFile, job_text: str = Form(...)):
     # Semantic similarity score
     semantic_score = compute_semantic_similarity(resume_text, job_text) * 100
     
-    # GPT-4o analysis
+    # Gemini LLM analysis
     gpt_analysis = analyze_with_gpt(resume_text, job_text)
     
     # Combined score (50% semantic, 30% keyword, 20% GPT if available)
