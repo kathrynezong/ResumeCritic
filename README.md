@@ -1,20 +1,28 @@
 # ResumeCritic
 
-**NLP-Powered Resume Tailoring Platform**
+**AI-Powered Resume Analysis Platform**
 
-ResumeCritic is a full-stack web application that analyzes resumes against job descriptions using NLP (spaCy) and rule-based keyword matching to score alignment and highlight missing keywords.  
-The project uses a **FastAPI** backend and a **Next.js (TypeScript)** frontend to deliver an interactive experience for users looking to optimize their resumes.
+ResumeCritic is a full-stack web application that analyzes resumes against job descriptions using multiple AI-powered techniques: semantic similarity analysis, keyword matching, and Google Gemini AI evaluation. The project uses a **FastAPI** backend and a **Next.js (TypeScript)** frontend to deliver an interactive experience for users looking to optimize their resumes.
 
 ---
 
 ## Features
 
-- **Resume Analysis:** Upload your resume and paste a job description to evaluate keyword and skill alignment.  
-- **Match Scoring:** Calculates a percentage score representing how closely your resume matches a given job description.  
-- **NLP-Based Keyword Extraction:** Uses spaCy for text processing and rule-based matching to detect missing keywords and provide suggestions for improvement.  
-- **Full-Stack Integration:** FastAPI backend with a Next.js frontend using RESTful communication.  
-- **Modern UI:** Clean interface built with TailwindCSS and TypeScript.  
-- **Theme Support:** Optional dark/light mode toggle using `next-themes`.
+- **Multi-Method Analysis:** Combines semantic similarity, keyword matching, and AI-powered evaluation for comprehensive resume analysis
+- **Smart Keyword Extraction:** Extracts technical keywords only from requirement sections (requirements, must-haves, nice-to-haves, etc.) using a comprehensive whitelist of technical terms
+- **Semantic Similarity Scoring:** Uses sentence transformers (all-MiniLM-L6-v2) to understand meaning beyond exact keyword matches
+- **AI-Powered Insights:** Google Gemini AI provides detailed analysis including:
+  - Technical skills match scoring
+  - Experience level assessment
+  - Education and qualifications evaluation
+  - Domain knowledge analysis
+  - Strengths and improvement areas
+  - Overall recommendation (STRONG_MATCH, GOOD_MATCH, PARTIAL_MATCH, WEAK_MATCH)
+- **PDF Support:** Extracts text from PDF resumes using pdfplumber
+- **OR Group Handling:** Intelligently handles alternative requirements (e.g., "Python or Java")
+- **Weighted Scoring:** Requirements sections weighted 3x more important than nice-to-have sections
+- **Modern UI:** Clean, responsive interface built with TailwindCSS and TypeScript
+- **Theme Support:** Dark/light mode toggle using `next-themes`
 
 ---
 
@@ -26,6 +34,7 @@ This guide will help you get both the backend and frontend running.
 
 - Python 3.9+ installed
 - Node.js and npm installed
+- Google Gemini API key (optional, for AI analysis - get one at https://makersuite.google.com/app/apikey)
 
 ## Step 1: Backend Setup
 
@@ -50,10 +59,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 1.4 Download spaCy language model (if not already installed)
+### 1.4 Set up environment variables
+Create a `.env` file in the `backend` directory:
 ```bash
-python -m spacy download en_core_web_sm
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-1.5-flash
 ```
+
+**Note:** The app will work without the Gemini API key, but AI analysis will be disabled. You'll still get semantic similarity and keyword matching scores.
 
 ### 1.5 Start the backend server
 ```bash
@@ -123,7 +136,8 @@ The `--reload` flag means the server will automatically restart when you make co
 
 ### API connection errors
 - Make sure the backend is running on port 8000
-- Verify that spaCy model is installed: `python -m spacy download en_core_web_sm`
+- Check that the `.env` file exists in the `backend` directory with your `GEMINI_API_KEY`
+- If Gemini API is not configured, the app will still work but AI analysis will be disabled
 
 ## Quick Commands Reference
 
@@ -144,4 +158,29 @@ npm run dev
 
 **View app:**
 - Open http://localhost:3000 in your browser
+
+---
+
+## Tech Stack
+
+### Backend
+- **FastAPI** - Modern Python web framework
+- **Uvicorn** - ASGI server
+- **sentence-transformers** - Semantic similarity using all-MiniLM-L6-v2 model
+- **scikit-learn** - Cosine similarity calculations
+- **pdfplumber** - PDF text extraction
+- **google-genai** - Google Gemini AI integration
+- **numpy** - Numerical operations
+
+### Frontend
+- **Next.js 16** - React framework with server-side rendering
+- **React 19** - UI library
+- **TypeScript** - Type-safe JavaScript
+- **TailwindCSS 4** - Utility-first CSS framework
+- **next-themes** - Theme management
+
+### AI & NLP
+- **Sentence Transformers** - For semantic similarity analysis
+- **Google Gemini** - For comprehensive resume evaluation and insights
+- **Rule-based Keyword Matching** - Technical keyword extraction from requirement sections
 

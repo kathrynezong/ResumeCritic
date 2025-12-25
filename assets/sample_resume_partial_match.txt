@@ -1,0 +1,71 @@
+JESSICA THOMPSON
+Computer Engineering Student
+Email: jessica.thompson@university.edu | Phone: (555) 234-8901
+LinkedIn: linkedin.com/in/jessicathompson
+
+EDUCATION
+
+Bachelor of Science in Computer Engineering
+Georgia Institute of Technology | Expected Graduation: December 2027
+GPA: 3.5/4.0
+Relevant Coursework: Digital Logic Design, Computer Architecture, 
+Programming in C++, Data Structures, Algorithms
+
+TECHNICAL SKILLS
+
+Programming: Python, C++, Java, JavaScript
+Embedded Systems: Arduino, basic microcontroller programming
+Digital Skills: Basic logic design, boolean algebra
+Tools: MATLAB, Git, Visual Studio, Eclipse
+Operating Systems: Linux, Windows
+Web Development: HTML, CSS, React, Node.js
+
+EXPERIENCE
+
+Software Development Intern | Local Tech Startup | Summer 2025
+• Developed web applications using React and Node.js
+• Wrote Python scripts for data processing and automation
+• Collaborated with team of 5 developers on agile projects
+• Participated in code reviews and sprint planning meetings
+
+Teaching Assistant | Georgia Tech CS Department | Jan 2025 - Present
+• Assist students with programming assignments in C++ and Python
+• Hold office hours to help debug code and explain concepts
+• Grade assignments and provide constructive feedback
+
+PROJECTS
+
+Home Automation System | Course Project | Fall 2024
+• Built basic Arduino-based system to control lights and temperature
+• Programmed microcontroller using C
+• Implemented simple sensor reading and LED control
+• Worked in team of 3 students
+
+Personal Website Portfolio | Personal Project | Summer 2024
+• Created responsive website using HTML, CSS, and JavaScript
+• Deployed on cloud hosting platform
+• Showcases academic projects and resume
+
+Calculator App | Mobile Development Course | Spring 2024
+• Developed Android calculator application in Java
+• Implemented basic arithmetic operations
+• Designed user interface following material design guidelines
+
+LEADERSHIP & ACTIVITIES
+
+Member | Society of Women Engineers | 2024 - Present
+• Attend monthly meetings and networking events
+• Participate in community outreach programs
+
+Volunteer | Local Coding Bootcamp for Kids | 2023 - Present
+• Teach basic programming concepts to middle school students
+• Help organize weekend coding workshops
+
+ADDITIONAL INFORMATION
+
+• Available for 12-week internship, 40 hours/week
+• Flexible with start dates
+• Willing to relocate within the United States
+• U.S. Citizen, 20 years old
+• Strong communication and teamwork skills
+• Quick learner with enthusiasm for new technologies

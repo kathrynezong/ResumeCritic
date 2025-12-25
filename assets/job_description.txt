@@ -1,0 +1,46 @@
+
+DESCRIPTION
+
+Amazon internships across all seasons are full-time positions, and interns should expect to work in office, Monday-Friday, up to 40 hours per week typically between 8am-5pm. Specific team norms around working hours will be communicated by your manager. Interns should not have conflicts such as classes or other employment during the Amazon work-day.
+
+Applicants should have a minimum of one quarter/semester/trimester remaining in their studies after their internship concludes. By applying to this position, your application will be considered for all Hardware Development Engineering Intern roles at all locations we hire for in the United States including but not limited to: Greater Seattle Area (Seattle, Bellevue, Redmond), Greater Bay Area (San Francisco, Sunnyvale, Santa Clara), Greater DMV (DC, MD, VA), Greater Boston Area (Boston, North Reading), Greater Los Angeles Area (Los Angeles, Pasadena, Northridge), Detroit (MI), San Diego (CA).
+
+You will be able to provide your preference of location and start date during the application process but, we cannot guarantee that we can meet your selection based on several factors including but not limited to the availability and business needs of this role. Finalization on the location and start dates available will be provided to you at the time of job offer.
+
+Start dates for our internships in this posting include the following periods:
+1. Winter (Starts January/February 2026)
+2. Summer (Starts May/June 2026)
+3. Fall (Starts August/September 2026)
+
+At Amazon, we hire the best minds in technology to innovate and build on behalf of our customers. The intense focus we have on our customers is why we are one of the world’s most beloved brands. Customer obsession is part of our company DNA.
+
+You will be part of a project team you will work alongside Senior Electrical Engineers; supporting the design, debug, validation and optimization of the products. You will be involved in projects from concept through production, gaining exposure to the complete design lifecycle. You will also support engineering builds gaining experience with high volume manufacturing.
+
+Key job responsibilities
+As a Hardware Development Engineer intern you will engage with an experienced cross-disciplinary staff to conceive and design innovative consumer products. You will work closely with an internal inter-disciplinary team, and outside partners to drive key aspects of product definition, execution, and test. You must be responsive, flexible and able to succeed within an open collaborative peer environment.
+Perform schematic design.
+Validate hardware and debug issues.
+Develop automated test tools (labview, HPVEE).
+Travel to support engineering builds.
+
+A day in the life
+Our internship program provides hands-on learning and building experiences for students who are interested in a career in hardware engineering. In addition to working on an impactful project, you will have the opportunity to engage with Amazonians for both personal and professional development, expand your network, and participate in fun activities with other interns throughout the summer. No matter the location of your internship, we give you the tools to own your internship and learn in a real-world setting.
+BASIC QUALIFICATIONS
+
+Are 18 years of age or older
+Work 40 hours/week minimum and commit to 12 week internship maximum
+Are enrolled in a academic program that is physically located in the United States
+Knowledge of analog and digital skills
+Knowledge of schematic design and debug skills
+Experience with embedded systems
+Currently working towards a Bachelor’s or Master's Degree in Electrical Engineering, Computer Engineering, Systems Engineering, or other equivalent discipline, with an expected conferral date between October 2026 – December 2029.
+PREFERRED QUALIFICATIONS
+
+Strong analytic and problem-solving skills.
+
+Amazon is an equal opportunity employer and does not discriminate on the basis of protected veteran status, disability, or other legally protected status.
+
+Our inclusive culture empowers Amazonians to deliver the best results for our customers. If you have a disability and need a workplace accommodation or adjustment during the application and hiring process, including support for the interview or onboarding process, please visit https://amazon.jobs/content/en/how-we-hire/accommodations for more information. If the country/region you’re applying in isn’t listed, please contact your Recruiting Partner.
+
+Our compensation reflects the cost of labor across several US geographic markets. The base pay for this position ranges from $41.78/hr in our lowest geographic market up to $88.94/hr in our highest geographic market. Pay is based on a number of factors including market location and may vary depending on job-related knowledge, skills, and experience. Amazon is a total compensation company. Dependent on the position offered, equity, sign-on payments, and other forms of compensation may be provided as part of a total compensation package, in addition to a full range of medical, financial, and/or other benefits. For more information, please visit https://www.aboutamazon.com/workplace/employee-benefits. This position will remain posted until filled. Applicants should apply via our internal or external career site.
+&nbsp;

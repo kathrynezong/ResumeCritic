@@ -52,7 +52,8 @@ export default function Home() {
       )}
 
       {/* MAIN HEADER */}
-      <h1 className="text-3xl font-bold text-center mb-8">ResumeCritic</h1>
+      <h1 className="text-3xl font-bold text-center mb-2">ResumeCritic</h1>
+      <p className="text-center text-sm text-[var(--text-muted)] mb-8">AI-Powered Semantic Analysis</p>
 
       {/* MAIN CONTENT - SIDE BY SIDE LAYOUT */}
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center max-w-7xl mx-auto">
@@ -94,7 +95,7 @@ export default function Home() {
           <h2 className="text-xl font-bold mb-4">Analysis Results</h2>
 
           <div className="mb-4">
-            <p className="text-[var(--text-muted)] mb-1">Match Score</p>
+            <p className="text-[var(--text-muted)] mb-1">Overall Match Score</p>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div
                 className="bg-[var(--accent)] h-3 rounded-full transition-all duration-500"
@@ -102,9 +103,123 @@ export default function Home() {
               />
             </div>
             <p className="text-sm text-[var(--text-muted)] mt-1">
-              {result.match_score ?? 0}% match
+              {result.match_score ?? 0}% overall match
             </p>
           </div>
+
+          {/* Semantic and Keyword Scores */}
+          {(result.semantic_score || result.keyword_score || result.gpt_analysis?.enabled) && (
+            <div className="mb-4 grid grid-cols-3 gap-4">
+              {result.semantic_score && (
+                <div>
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Semantic</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${result.semantic_score}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{result.semantic_score.toFixed(1)}%</p>
+                </div>
+              )}
+              {result.keyword_score !== undefined && (
+                <div>
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Keyword</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${result.keyword_score}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{result.keyword_score}%</p>
+                </div>
+              )}
+              {result.gpt_analysis?.enabled && (
+                <div>
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Gemini AI</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-purple-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${result.gpt_analysis.overall_score}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{result.gpt_analysis.overall_score}%</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Gemini AI Analysis Summary */}
+          {result.gpt_analysis?.enabled && (
+            <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
+              <h3 className="font-semibold mb-3 text-base flex items-center gap-2">
+                <span>🤖</span>
+                <span>Gemini AI Analysis</span>
+              </h3>
+              
+              {/* AI Summary - Prominently Displayed */}
+              {result.gpt_analysis.summary && (
+                <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-md border border-purple-200 dark:border-purple-800">
+                  <p className="text-sm font-medium mb-1 text-[var(--text-main)]">AI Summary:</p>
+                  <p className="text-sm text-[var(--text-main)] leading-relaxed">{result.gpt_analysis.summary}</p>
+                </div>
+              )}
+              
+              {/* Recommendation Badge */}
+              {result.gpt_analysis.recommendation && (
+                <div className="mb-3">
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200">
+                    Recommendation: {result.gpt_analysis.recommendation?.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              )}
+              
+              {/* Detailed Scores */}
+              <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                <div className="flex justify-between">
+                  <span className="text-[var(--text-muted)]">Technical Skills:</span>
+                  <span className="font-semibold">{result.gpt_analysis.technical_skills}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--text-muted)]">Experience:</span>
+                  <span className="font-semibold">{result.gpt_analysis.experience_level}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--text-muted)]">Education:</span>
+                  <span className="font-semibold">{result.gpt_analysis.education}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--text-muted)]">Domain Knowledge:</span>
+                  <span className="font-semibold">{result.gpt_analysis.domain_knowledge}%</span>
+                </div>
+              </div>
+              
+              {/* Strengths and Gaps */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {result.gpt_analysis.strengths?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold mb-1 text-green-700 dark:text-green-400">✅ Strengths:</p>
+                    <ul className="text-xs list-disc list-inside text-[var(--text-muted)] space-y-1">
+                      {result.gpt_analysis.strengths.map((s: string, i: number) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {result.gpt_analysis.gaps?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold mb-1 text-red-700 dark:text-red-400">⚠️ Areas to Improve:</p>
+                    <ul className="text-xs list-disc list-inside text-[var(--text-muted)] space-y-1">
+                      {result.gpt_analysis.gaps.map((g: string, i: number) => (
+                        <li key={i}>{g}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div>
             <p className="text-[var(--text-muted)] mb-2 font-medium">
@@ -189,7 +304,8 @@ export default function Home() {
             </div>
           ) : (
             <div className="bg-[var(--card)] p-6 rounded-2xl shadow-md text-center text-[var(--text-muted)]">
-              <p>Upload a resume and job description to see analysis results here.</p>
+              <p>Upload a resume and job description to see AI-powered semantic analysis.</p>
+              <p className="text-xs mt-2">Uses advanced NLP to understand meaning beyond keywords</p>
             </div>
           )}
         </div>

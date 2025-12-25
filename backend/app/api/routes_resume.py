@@ -1,14 +1,41 @@
 from fastapi import APIRouter, UploadFile, Form, HTTPException
-import spacy
 import re
-import PyPDF2
 import pdfplumber
 from io import BytesIO
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+import google.genai as genai
+import os
+from dotenv import load_dotenv
+import json
+
+load_dotenv()
 
 router = APIRouter()
-nlp = spacy.load("en_core_web_sm")
+
+# Load semantic similarity model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Initialize Google Gemini client
+try:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key:
+        client = genai.Client(api_key=api_key)
+        gemini_model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        LLM_ENABLED = True
+    else:
+        client = None
+        gemini_model_name = None
+        LLM_ENABLED = False
+except Exception as e:
+    print(f"Gemini not configured: {e}")
+    client = None
+    gemini_model_name = None
+    LLM_ENABLED = False
 
 # Known programming languages and technologies
+# Combined list of all technical terms (single words and multi-word phrases)
 TECHNICAL_TERMS = {
     # Programming languages
     "python", "java", "javascript", "typescript", "c++", "c#", "cpp", "c",
@@ -31,19 +58,31 @@ TECHNICAL_TERMS = {
     "rtos", "hal", "ecu", "can", "lin", "spi", "i2c", "uart", "usb",
     "embedded", "microcontroller", "fpga", "arm", "cortex", "x86",
     "firmware", "bootloader", "device driver",
+    "embedded linux", "embedded software", "real-time operating system",
+    "hardware abstraction layer", "kernel space", "user space",
     
     # Automotive and protocols
     "autosar", "misra", "iso26262", "aspice", "functional safety",
-    "adas", "v2x", "obd", "diagnostics",
+    "adas", "v2x", "obd", "diagnostics", "automotive communication",
     
     # Development practices
     "agile", "scrum", "kanban", "devops", "cicd", "tdd", "bdd",
     "unit testing", "integration testing", "test automation",
-    "code review", "version control", "continuous integration",
+    "code review", "version control", "continuous integration", "continuous deployment",
+    "test driven development", "behavior driven development", "agile methodology",
+    "version control system", "source code management", "build automation",
+    "configuration management", "release management", "technical documentation",
     
     # Cloud and architecture
     "microservices", "api", "rest", "graphql", "grpc", "soap",
     "serverless", "lambda", "containerization", "orchestration",
+    "software architecture", "design patterns", "object oriented",
+    "software development", "full stack", "back end", "front end",
+    "system design", "distributed system", "cloud computing", "edge computing",
+    
+    # Acronyms and abbreviations
+    "sdk", "ide", "orm", "mvc", "crud", "iot", "pcb",
+    "tcp", "udp", "http", "https", "ssh",
     
     # Data and ML
     "machine learning", "deep learning", "neural network", "nlp",
@@ -53,58 +92,16 @@ TECHNICAL_TERMS = {
     # Security
     "encryption", "authentication", "authorization", "oauth", "jwt",
     "penetration testing", "vulnerability assessment", "cybersecurity",
-}
-
-# Multi-word technical terms and patterns
-TECHNICAL_PHRASES = {
-    "embedded linux", "embedded software", "real-time operating system",
-    "hardware abstraction layer", "device driver", "kernel space", "user space",
-    "automotive communication", "functional safety", "software architecture",
-    "design patterns", "object oriented", "continuous integration", "continuous deployment",
-    "test driven development", "behavior driven development", "agile methodology",
-    "version control system", "source code management", "build automation",
-    "configuration management", "release management", "technical documentation",
-    "software development", "full stack", "back end", "front end",
+    
+    # Education and concepts
     "data structure", "algorithm", "computer science", "electrical engineering",
-    "computer engineering", "software engineering", "system design",
+    "computer engineering", "software engineering",
     "performance optimization", "memory management", "multithreading", "concurrency",
-    "distributed system", "cloud computing", "edge computing",
-}
-
-# Words to completely ignore
-IGNORE_WORDS = {
-    # Generic business/job terms
-    "job", "position", "role", "opportunity", "career", "company", "team",
-    "candidate", "employee", "work", "experience", "year", "responsibility",
-    "skill", "ability", "requirement", "qualification", "education", "degree",
-    "communication", "collaboration", "customer", "client", "business",
-    "management", "leadership", "project", "problem", "solution", "quality",
-    
-    # Generic descriptive words
-    "good", "great", "excellent", "strong", "effective", "efficient", "successful",
-    "innovative", "creative", "dynamic", "passionate", "motivated", "detail",
-    
-    # Common verbs/actions
-    "develop", "create", "build", "design", "implement", "maintain", "improve",
-    "work", "collaborate", "communicate", "manage", "lead", "support", "provide",
-    "ensure", "help", "make", "take", "give", "use", "need", "want",
-    
-    # Time/location
-    "time", "day", "week", "month", "year", "location", "office", "remote",
-    "canada", "usa", "united states",
-    
-    # Compensation
-    "salary", "pay", "compensation", "benefit", "bonus", "stock",
-    
-    # Other filler
-    "etc", "including", "such", "other", "various", "multiple", "related",
-    "completion", "term", "application", "performance", "next", "chapter",
 }
 
 def extract_keywords(text: str):
     """
-    Extract technical keywords from job postings and resumes.
-    Focus on technologies, tools, frameworks, and specific technical skills.
+    Extract technical keywords - simplified regex-based extraction
     """
     if not text or not text.strip():
         return set()
@@ -112,28 +109,20 @@ def extract_keywords(text: str):
     keywords = set()
     text_lower = text.lower()
     
-    # Extract exact technical terms (single words and multi-word)
+    # Extract technical terms (handles both single words and multi-word phrases)
     for term in TECHNICAL_TERMS:
-        # Handle multi-word terms differently
         if ' ' in term or '-' in term:
-            # For multi-word terms, use a more flexible pattern
+            # Multi-word terms: allow spaces or hyphens
             pattern = re.escape(term).replace(r'\ ', r'[\s\-]+')
             if re.search(pattern, text_lower):
                 keywords.add(term)
         else:
-            # For single words, use word boundaries
+            # Single-word terms: use word boundaries
             pattern = r'\b' + re.escape(term) + r'\b'
             if re.search(pattern, text_lower):
                 keywords.add(term)
     
-    # Extract multi-word technical phrases
-    for phrase in TECHNICAL_PHRASES:
-        # Allow for slight variations (hyphens, spaces)
-        pattern = re.escape(phrase).replace(r'\ ', r'[\s\-]+')
-        if re.search(pattern, text_lower):
-            keywords.add(phrase)
-    
-    # Extract programming languages with special characters
+    # Extract special patterns
     special_patterns = {
         r'\bc\+\+\b': 'c++',
         r'\bc#\b': 'c#',
@@ -144,86 +133,211 @@ def extract_keywords(text: str):
         if re.search(pattern, text_lower):
             keywords.add(term)
     
-    # Extract version numbers with technologies (e.g., "Python 3.x", "Java 11")
-    tech_version_pattern = r'\b(python|java|node|go|rust|ruby|php)\s*\d+(?:\.\d+)?(?:\.\d+)?'
-    for match in re.finditer(tech_version_pattern, text_lower):
-        tech_name = match.group(1)
-        keywords.add(tech_name)
-    
-    # Extract acronyms (2-5 uppercase letters, technical sounding)
+    # Extract acronyms (2-5 uppercase letters)
+    # Only match uppercase to avoid false positives like "can" (verb)
     acronyms = re.findall(r'\b[A-Z]{2,5}\b', text)
-    known_acronyms = {'api', 'sdk', 'ide', 'orm', 'mvc', 'mvvm', 'crud', 'cicd', 
-                      'aws', 'gcp', 'sql', 'nosql', 'rest', 'soap', 'grpc',
-                      'iot', 'pcb', 'fpga', 'dsp', 'rtos', 'hal', 'ecu', 'can',
-                      'tcp', 'udp', 'http', 'https', 'ssh', 'ftp', 'smtp',
-                      'jwt', 'oauth', 'saml', 'ldap', 'tdd', 'bdd'}
-    
     for acro in acronyms:
         acro_lower = acro.lower()
-        # Only add if it's a known technical acronym
-        if acro_lower in known_acronyms or acro_lower in TECHNICAL_TERMS:
+        # Check if the acronym is in our technical terms list
+        if acro_lower in TECHNICAL_TERMS:
             keywords.add(acro_lower)
     
-    # Use spaCy for NLP-based extraction
-    doc = nlp(text_lower)
+    return keywords
+
+def compute_semantic_similarity(text1: str, text2: str) -> float:
+    """
+    Compute semantic similarity between two texts using sentence transformers
+    Returns similarity score between 0 and 1
+    """
+    if not text1.strip() or not text2.strip():
+        return 0.0
     
-    # Extract noun chunks ONLY if they match known technical phrases
-    # This is much more conservative - only extract exact matches
-    for chunk in doc.noun_chunks:
-        chunk_text = chunk.text.strip()
-        
-        # Skip short or very long chunks
-        if len(chunk_text) < 3 or len(chunk_text) > 50:
-            continue
-        
-        # Clean the chunk and lowercase
-        clean_chunk = re.sub(r'[^\w\s-]', '', chunk_text.lower().strip())
-        
-        # ONLY add if it's a known technical phrase (exact match)
-        if clean_chunk in TECHNICAL_PHRASES:
-            keywords.add(clean_chunk)
+    embeddings = model.encode([text1, text2])
+    similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+    return float(similarity)
+
+def analyze_with_gpt(resume_text: str, job_text: str) -> dict:
+    """
+    Use Google Gemini to analyze resume-job fit with consistent criteria
+    Returns structured analysis with score and feedback
+    """
+    if not LLM_ENABLED or not client or not gemini_model_name:
+        return {"enabled": False, "error": "Gemini analysis not configured"}
     
-    # Extract individual technical nouns - ONLY known technical terms
-    for token in doc:
-        # Skip non-alphabetic, short tokens, and stop words
-        if not token.is_alpha or len(token.text) < 3 or token.is_stop:
-            continue
+    prompt = f"""You are an expert HR recruiter. Analyze how well this resume matches the job requirements.
+
+JOB DESCRIPTION:
+{job_text}
+
+RESUME:
+{resume_text}
+
+Evaluate the candidate on these criteria (score each 0-100):
+1. Technical Skills Match: Required technical skills and tools
+2. Experience Level: Years and type of experience required
+3. Education & Qualifications: Degree and certifications
+4. Domain Knowledge: Industry-specific knowledge
+5. Overall Fit: Cultural fit and soft skills
+
+Provide your response in this exact JSON format (keep all text concise - max 50 chars per strength/gap, 150 chars for summary):
+{{
+  "technical_skills": <score 0-100>,
+  "experience_level": <score 0-100>,
+  "education": <score 0-100>,
+  "domain_knowledge": <score 0-100>,
+  "overall_fit": <score 0-100>,
+  "overall_score": <average score 0-100>,
+  "strengths": ["strength1", "strength2", "strength3"],
+  "gaps": ["gap1", "gap2", "gap3"],
+  "recommendation": "<STRONG_MATCH|GOOD_MATCH|PARTIAL_MATCH|WEAK_MATCH>",
+  "summary": "<2-3 sentence summary, max 150 characters>"
+}}
+
+IMPORTANT: Return ONLY valid JSON. No markdown, no code blocks, no explanations. Start with {{ and end with }}. Keep all strings short."""
+    
+    try:
+        response = client.models.generate_content(
+            model=gemini_model_name,
+            contents=prompt,
+            config={
+                "temperature": 0.3,
+                "max_output_tokens": 2000,  # Increased to handle longer responses
+            }
+        )
         
-        lemma = token.lemma_.lower()
+        # Get the full response text - handle different response formats
+        if hasattr(response, 'text'):
+            content = response.text.strip()
+        elif hasattr(response, 'candidates') and len(response.candidates) > 0:
+            # Alternative response format
+            content = response.candidates[0].content.parts[0].text.strip()
+        elif hasattr(response, 'content'):
+            content = response.content.strip()
+        else:
+            # Try to convert to string
+            content = str(response).strip()
         
-        # Skip if it's in ignore list
-        if lemma in IGNORE_WORDS:
-            continue
+        # Debug: Check if response seems truncated
+        if len(content) < 100:
+            print(f"Warning: Response seems very short ({len(content)} chars)")
         
-        # ONLY keep nouns and proper nouns that are KNOWN technical terms
-        if token.pos_ in {"NOUN", "PROPN"}:
-            # Only add if it's a known technical term - no guessing!
-            if lemma in TECHNICAL_TERMS:
-                keywords.add(lemma)
-    
-    # Final cleanup - be very strict
-    keywords = {
-        kw.strip().lower() for kw in keywords 
-        if kw.strip() 
-        and len(kw.strip()) >= 2
-        and kw.strip().lower() not in IGNORE_WORDS
-        and not re.match(r'^\d+$', kw.strip())  # Remove pure numbers
-        and not any(word in IGNORE_WORDS for word in kw.strip().lower().split())  # Remove if contains ignore words
-    }
-    
-    # Final filter: only keep if it's in our known technical terms/phrases or is a known acronym
-    final_keywords = set()
-    known_acronyms_lower = {a.lower() for a in known_acronyms}
-    
-    for kw in keywords:
-        kw_lower = kw.lower()
-        # Keep if it's a known technical term, phrase, or acronym
-        if (kw_lower in TECHNICAL_TERMS or 
-            kw_lower in TECHNICAL_PHRASES or 
-            kw_lower in known_acronyms_lower):
-            final_keywords.add(kw_lower)
-    
-    return final_keywords
+        # Extract JSON from response - handle various formats
+        if "```json" in content:
+            # Extract content between ```json and ```
+            parts = content.split("```json")
+            if len(parts) > 1:
+                content = parts[1].split("```")[0].strip()
+        elif "```" in content:
+            # Extract content between ``` and ```
+            parts = content.split("```")
+            if len(parts) > 1:
+                content = parts[1].split("```")[0].strip()
+        
+        # Try to find JSON object boundaries if not already extracted
+        if not content.startswith("{"):
+            start_idx = content.find("{")
+            if start_idx != -1:
+                content = content[start_idx:]
+        
+        # Find the matching closing brace - handle nested objects and strings properly
+        brace_count = 0
+        in_string = False
+        escape_next = False
+        end_idx = -1
+        
+        for i, char in enumerate(content):
+            if escape_next:
+                escape_next = False
+                continue
+            
+            if char == "\\":
+                escape_next = True
+                continue
+            
+            if char == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            
+            if not in_string:
+                if char == "{":
+                    brace_count += 1
+                elif char == "}":
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end_idx = i + 1
+                        break
+        
+        if end_idx != -1:
+            content = content[:end_idx]
+        else:
+            # If we couldn't find the end, the JSON might be incomplete
+            # Try to close it manually by adding missing closing braces/brackets
+            open_braces = content.count('{') - content.count('}')
+            open_brackets = content.count('[') - content.count(']')
+            
+            # If we're in the middle of a string, try to close it
+            if in_string:
+                content += '"'
+                in_string = False
+            
+            # Close any open arrays
+            for _ in range(open_brackets):
+                content += ']'
+            
+            # Close any open objects
+            for _ in range(open_braces):
+                content += '}'
+        
+        # Clean up any trailing commas or whitespace before parsing
+        content = content.rstrip().rstrip(',')
+        
+        # Parse JSON
+        result = json.loads(content)
+        result["enabled"] = True
+        return result
+        
+    except json.JSONDecodeError as e:
+        print(f"Gemini JSON parsing error: {e}")
+        print(f"Response content (first 2000 chars): {content[:2000]}")
+        print(f"Response length: {len(content)}")
+        print(f"Last 200 chars: {content[-200:]}")
+        
+        # Try to fix common JSON issues
+        try:
+            import re
+            # Remove trailing commas
+            fixed_content = re.sub(r',\s*}', '}', content)
+            fixed_content = re.sub(r',\s*]', ']', fixed_content)
+            
+            # If response seems truncated, try to close it
+            open_braces = fixed_content.count('{') - fixed_content.count('}')
+            open_brackets = fixed_content.count('[') - fixed_content.count(']')
+            
+            # Close incomplete strings at the end
+            if fixed_content.rstrip().endswith('"') == False and '"' in fixed_content:
+                # Find last unclosed quote
+                last_quote = fixed_content.rfind('"')
+                if last_quote > len(fixed_content) - 50:  # Near the end
+                    # Check if it's an open string
+                    before_quote = fixed_content[:last_quote]
+                    if before_quote.count('"') % 2 == 1:  # Odd number means unclosed
+                        fixed_content = fixed_content[:last_quote] + '"' + fixed_content[last_quote+1:]
+            
+            # Close arrays and objects
+            for _ in range(open_brackets):
+                fixed_content += ']'
+            for _ in range(open_braces):
+                fixed_content += '}'
+            
+            result = json.loads(fixed_content)
+            result["enabled"] = True
+            return result
+        except Exception as fix_error:
+            print(f"Failed to fix JSON: {fix_error}")
+            return {"enabled": False, "error": f"Failed to parse AI response (truncated?): {str(e)}"}
+    except Exception as e:
+        print(f"Gemini analysis error: {e}")
+        return {"enabled": False, "error": str(e)}
 
 def extract_or_groups(text: str, all_keywords: set) -> list:
     """
@@ -329,12 +443,10 @@ def match_with_or_groups(resume_keywords: set, job_keywords: set, or_groups: lis
 
 def extract_text_from_pdf(file_content: bytes) -> str:
     """
-    Extract text from PDF file content.
-    Tries pdfplumber first (better for complex PDFs), falls back to PyPDF2.
+    Extract text from PDF file content using pdfplumber.
     """
     text = ""
     
-    # Try pdfplumber first (better text extraction)
     try:
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
@@ -342,28 +454,22 @@ def extract_text_from_pdf(file_content: bytes) -> str:
                 if page_text:
                     text += page_text + "\n"
     except Exception as e:
-        print(f"pdfplumber failed: {e}, trying PyPDF2...")
-        # Fallback to PyPDF2
-        try:
-            pdf_file = BytesIO(file_content)
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-            for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
-        except Exception as e2:
-            print(f"PyPDF2 also failed: {e2}")
-            raise HTTPException(
-                status_code=400,
-                detail=f"Could not extract text from PDF: {str(e2)}"
-            )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not extract text from PDF: {str(e)}"
+        )
+    
+    if not text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="PDF appears to be empty or contains no extractable text"
+        )
     
     return text
 
 @router.post("/analyze")
 async def analyze_resume(resume: UploadFile, job_text: str = Form(...)):
-    # Read uploaded resume
     file_content = await resume.read()
-    
-    # Check file type and extract text accordingly
     file_extension = resume.filename.split('.')[-1].lower() if resume.filename else ''
     
     if file_extension == 'pdf':
@@ -371,69 +477,43 @@ async def analyze_resume(resume: UploadFile, job_text: str = Form(...)):
     elif file_extension in ['txt', 'text']:
         resume_text = file_content.decode("utf-8", errors="ignore")
     else:
-        # Try to decode as text first, if that fails try PDF
-        try:
-            resume_text = file_content.decode("utf-8", errors="ignore")
-        except:
-            try:
-                resume_text = extract_text_from_pdf(file_content)
-            except:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Could not extract text from file. Please upload a PDF or TXT file."
-                )
+        raise HTTPException(status_code=400, detail="Could not extract text from file")
 
-    # Extract keywords using NLP
+    # Keyword-based matching
     resume_kw = extract_keywords(resume_text)
     job_kw = extract_keywords(job_text)
-    
-    # Extract "or" groups from job posting
-    all_technical_terms = TECHNICAL_TERMS | TECHNICAL_PHRASES
     or_groups = extract_or_groups(job_text, job_kw)
-    
-    # Match keywords accounting for "or" groups
     common, missing, matched_groups = match_with_or_groups(resume_kw, job_kw, or_groups)
     
-    # Calculate score: count each "or" group as 1 requirement, not multiple
-    # Regular keywords count as 1 each, "or" groups count as 1 total
-    total_requirements = len(job_kw)
-    # Subtract keywords that are in "or" groups and add back the groups (counted as 1 each)
+    # Calculate keyword score
     keywords_in_groups = set()
     for group in or_groups:
         keywords_in_groups.update(group)
     
-    # Adjust total: remove individual keywords that are in groups, add groups
-    adjusted_total = total_requirements - len(keywords_in_groups) + len(or_groups)
-    
-    # Count matched: regular matches + matched groups
+    adjusted_total = len(job_kw) - len(keywords_in_groups) + len(or_groups)
     matched_regular = len(common - keywords_in_groups)
-    matched_group_count = len(matched_groups)
-    total_matched = matched_regular + matched_group_count
-    
-    score = int((total_matched / adjusted_total) * 100) if adjusted_total > 0 else 0
+    total_matched = matched_regular + len(matched_groups)
+    keyword_score = int((total_matched / adjusted_total) * 100) if adjusted_total > 0 else 0
 
-    print("\n=== Job Keywords ===")
-    print(sorted(job_kw))
-    print("\n=== Resume Keywords ===")
-    print(sorted(resume_kw))
-    print("\n=== Common Keywords ===")
-    print(sorted(common))
-    print("\n=== Missing Keywords ===")
-    print(sorted(missing))
-    print("\n=== OR Groups Found ===")
-    for i, group in enumerate(or_groups, 1):
-        print(f"Group {i}: {sorted(group)}")
-    print("\n=== Matched OR Groups ===")
-    for i, group in enumerate(matched_groups, 1):
-        print(f"Group {i}: {sorted(group)}")
+    # Semantic similarity score
+    semantic_score = compute_semantic_similarity(resume_text, job_text) * 100
+    
+    # Gemini LLM analysis
+    gpt_analysis = analyze_with_gpt(resume_text, job_text)
+    
+    # Combined score (50% semantic, 30% keyword, 20% GPT if available)
+    if gpt_analysis.get("enabled"):
+        final_score = int(semantic_score * 0.5 + keyword_score * 0.3 + gpt_analysis["overall_score"] * 0.2)
+    else:
+        final_score = int(semantic_score * 0.7 + keyword_score * 0.3)
 
     return {
-        "match_score": score,
+        "match_score": final_score,
+        "semantic_score": round(semantic_score, 1),
+        "keyword_score": keyword_score,
+        "gpt_analysis": gpt_analysis,
         "missing_keywords": sorted(list(missing)),
+        "matched_keywords": sorted(list(common)),
         "job_keywords": sorted(list(job_kw)),
         "resume_keywords": sorted(list(resume_kw)),
-        "matched_keywords": sorted(list(common)),
-        "total_job_keywords": len(job_kw),
-        "total_resume_keywords": len(resume_kw),
-        "total_matched": len(common),
     }
