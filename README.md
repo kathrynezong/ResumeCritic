@@ -2,27 +2,62 @@
 
 **AI-Powered Resume Analysis Platform**
 
-ResumeCritic is a full-stack web application that analyzes resumes against job descriptions using multiple AI-powered techniques: semantic similarity analysis, keyword matching, and Google Gemini AI evaluation. The project uses a **FastAPI** backend and a **Next.js (TypeScript)** frontend to deliver an interactive experience for users looking to optimize their resumes.
+ResumeCritic is a full-stack web application that analyzes resumes against job descriptions using multiple methods: rule-based keyword matching, semantic similarity, and optional AI evaluation (Google Gemini). The frontend is built with Next.js (TypeScript + Tailwind) and the backend is a FastAPI service that performs text extraction, keyword & OR-group matching, semantic embedding comparisons, and optional LLM analysis.
+
+---
+
+## Quick overview / architecture
+
+- Frontend (Next.js) — user uploads a resume and pastes a job description, then displays results.
+- Backend (FastAPI) — single endpoint `POST /api/analyze`:
+  - Extract text from resume (pdfplumber for PDFs; decode text files)
+  - Keyword extraction and OR-group handling (rule-based)
+  - Semantic similarity using sentence-transformers (all-MiniLM-L6-v2) + cosine similarity
+  - Optional Google Gemini LLM analysis (if `GEMINI_API_KEY` is configured)
+  - Score aggregation and JSON response to frontend
+
+Data flow (high level): Browser → Next.js UI → POST /api/analyze → Backend processing (PDF extraction → Keywords / OR groups → Embeddings → Optional LLM) → Aggregator → JSON response → UI.
 
 ---
 
 ## Features
 
-- **Multi-Method Analysis:** Combines semantic similarity, keyword matching, and AI-powered evaluation for comprehensive resume analysis
-- **Smart Keyword Extraction:** Extracts technical keywords only from requirement sections (requirements, must-haves, nice-to-haves, etc.) using a comprehensive whitelist of technical terms
-- **Semantic Similarity Scoring:** Uses sentence transformers (all-MiniLM-L6-v2) to understand meaning beyond exact keyword matches
-- **AI-Powered Insights:** Google Gemini AI provides detailed analysis including:
-  - Technical skills match scoring
-  - Experience level assessment
-  - Education and qualifications evaluation
-  - Domain knowledge analysis
-  - Strengths and improvement areas
-  - Overall recommendation (STRONG_MATCH, GOOD_MATCH, PARTIAL_MATCH, WEAK_MATCH)
-- **PDF Support:** Extracts text from PDF resumes using pdfplumber
-- **OR Group Handling:** Intelligently handles alternative requirements (e.g., "Python or Java")
-- **Weighted Scoring:** Requirements sections weighted 3x more important than nice-to-have sections
-- **Modern UI:** Clean, responsive interface built with TailwindCSS and TypeScript
-- **Theme Support:** Dark/light mode toggle using `next-themes`
+- Multi-method analysis: rule-based keywords + semantic similarity + optional LLM.
+- Smart keyword extraction: technical whitelist (initially in code).
+- OR-group handling: recognizes alternatives (e.g., "Python or Java").
+- Semantic similarity: uses sentence-transformers to capture contextual matches beyond exact tokens.
+- AI insights (optional): Google Gemini returns structured feedback (scores, strengths, gaps, recommendation).
+- PDF support: `pdfplumber` extracts text from PDF resumes.
+- Modern UI: Next.js + TypeScript + TailwindCSS.
+- Theme support: Dark/light with `next-themes`.
+
+---
+
+## Design decisions
+
+- Combined approach (keywords + semantic)  
+  Rule-based keywords are interpretable and allow deterministic matches (and easy feedback like "missing keywords"). Semantic similarity catches paraphrases and context that keywords miss. Combining both gives a more robust, explainable signal.
+
+- OR-group handling  
+  Job posts often list alternatives (e.g., "Python or Java"). Treating those as a single logical requirement avoids double-penalizing candidates who meet one of the alternatives.
+
+- Optional LLM integration (Google Gemini)  
+  Gemini provides richer recruiter-like feedback (strengths/gaps, recommendation). Because LLM calls are slower and costly, integration is optional and gated by `GEMINI_API_KEY`. If not configured, the app still returns keyword + semantic scores.
+
+---
+
+## Evolution — how the project grew
+
+1. Keyword matching (initial)  
+   - Start: simple rule-based extraction from job text and resume text using a built-in whitelist. Provided immediate, interpretable matches and a quick MVP.
+
+2. Semantic similarity (added later)  
+   - Motivation: keyword-only matching missed paraphrases and contextual matches.  
+   - Change: added sentence-transformers (all-MiniLM-L6-v2), encoded resume + job texts, and computed cosine similarity to score semantic fit.
+
+3. AI integration (latest, optional)  
+   - Motivation: get recruiter-style qualitative feedback (strengths, gaps, recommendation) and a supplemental score.  
+   - Change: introduced an optional call to Google Gemini (via google-genai) that asks for structured JSON analysis. The backend merges Gemini's overall_score into the final score when available.
 
 ---
 
