@@ -59,16 +59,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 1.4 Set up environment variables
-Create a `.env` file in the `backend` directory:
-```bash
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-1.5-flash
-```
-
-**Note:** The app will work without the Gemini API key, but AI analysis will be disabled. You'll still get semantic similarity and keyword matching scores.
-
-### 1.5 Start the backend server
+### 1.4 Start the backend server
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
@@ -183,4 +174,10 @@ npm run dev
 - **Sentence Transformers** - For semantic similarity analysis
 - **Google Gemini** - For comprehensive resume evaluation and insights
 - **Rule-based Keyword Matching** - Technical keyword extraction from requirement sections
+
+---
+
+## Demo
+
+![ResumeCritic Demo](images/demo.png)
 
