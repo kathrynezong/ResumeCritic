@@ -1,0 +1,192 @@
+# Technical terms used for keyword extraction (single word or multi-word entries)
+# Keep entries lowercase. Multi-word phrases are allowed.
+- python
+- java
+- javascript
+- typescript
+- c++
+- c#
+- cpp
+- c
+- go
+- golang
+- rust
+- ruby
+- php
+- swift
+- kotlin
+- scala
+- r
+- matlab
+- perl
+- shell
+- bash
+- powershell
+- sql
+- react
+- angular
+- vue
+- django
+- flask
+- fastapi
+- express
+- spring
+- node
+- nodejs
+- tensorflow
+- pytorch
+- keras
+- pandas
+- numpy
+- scikit-learn
+- opencv
+- matplotlib
+- seaborn
+- aws
+- azure
+- gcp
+- docker
+- kubernetes
+- k8s
+- jenkins
+- git
+- github
+- gitlab
+- bitbucket
+- jira
+- confluence
+- linux
+- unix
+- windows
+- android
+- ios
+- macos
+- postgresql
+- mysql
+- mongodb
+- redis
+- elasticsearch
+- cassandra
+- kafka
+- rabbitmq
+- nginx
+- apache
+- rtos
+- hal
+- ecu
+- can
+- lin
+- spi
+- i2c
+- uart
+- usb
+- embedded
+- microcontroller
+- fpga
+- arm
+- cortex
+- x86
+- firmware
+- bootloader
+- device driver
+- embedded linux
+- embedded software
+- real-time operating system
+- hardware abstraction layer
+- kernel space
+- user space
+- autosar
+- misra
+- iso26262
+- aspice
+- functional safety
+- adas
+- v2x
+- obd
+- diagnostics
+- automotive communication
+- agile
+- scrum
+- kanban
+- devops
+- cicd
+- tdd
+- bdd
+- unit testing
+- integration testing
+- test automation
+- code review
+- version control
+- continuous integration
+- continuous deployment
+- test driven development
+- behavior driven development
+- agile methodology
+- version control system
+- source code management
+- build automation
+- configuration management
+- release management
+- technical documentation
+- microservices
+- api
+- rest
+- graphql
+- grpc
+- soap
+- serverless
+- lambda
+- containerization
+- orchestration
+- software architecture
+- design patterns
+- object oriented
+- software development
+- full stack
+- back end
+- front end
+- system design
+- distributed system
+- cloud computing
+- edge computing
+- sdk
+- ide
+- orm
+- mvc
+- crud
+- iot
+- pcb
+- tcp
+- udp
+- http
+- https
+- ssh
+- machine learning
+- deep learning
+- neural network
+- nlp
+- computer vision
+- data analysis
+- data science
+- big data
+- etl
+- data pipeline
+- data warehouse
+- encryption
+- authentication
+- authorization
+- oauth
+- jwt
+- penetration testing
+- vulnerability assessment
+- cybersecurity
+- data structure
+- algorithm
+- computer science
+- electrical engineering
+- computer engineering
+- software engineering
+- performance optimization
+- memory management
+- multithreading
+- concurrency
