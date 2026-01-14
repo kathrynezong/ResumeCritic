@@ -210,9 +210,4 @@ npm run dev
 - **Google Gemini** - For comprehensive resume evaluation and insights
 - **Rule-based Keyword Matching** - Technical keyword extraction from requirement sections
 
----
-
-## Demo
-
-![ResumeCritic Demo](images/demo.png)
 
